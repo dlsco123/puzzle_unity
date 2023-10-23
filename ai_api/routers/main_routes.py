@@ -22,12 +22,14 @@ async def upload_image(file: UploadFile = File(...)):
     # subprocess를 사용하여 Blender 스크립트 실행
     subprocess.run(
         [
-            "/path_to_blender_executable/blender", 
+            "D:\\blender.exe", 
             "--background", 
-            "--python", "blender_script.py", 
-            "--", save_path, f"output_{timestamp}.fbx"
+            "--python", "D:\\blender_script.py", 
+            "--", save_path, "ai_api/uploads/output.fbx"
         ], 
         check=True
     )
+
+
     
     return {"message": "Image received and processed!"}
