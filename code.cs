@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using System.IO;
+using ICSharpCode.SharpZipLib.Zip;
 
 public class TakePhoto : MonoBehaviour
 {
@@ -51,6 +52,7 @@ public class TakePhoto : MonoBehaviour
         RenderTexture.active = currentRT;
         RenderTexture.ReleaseTemporary(renderTexture);
 
+
         StartCoroutine(UploadDownloadCoroutine(screenshot));
     }
 
@@ -72,13 +74,58 @@ public class TakePhoto : MonoBehaviour
             }
             else
             {
-                Debug.Log("Image uploaded! Downloading FBX...");
-                string fbxPath = Path.Combine(Application.persistentDataPath, "downloadedModel.fbx");
-                File.WriteAllBytes(fbxPath, www.downloadHandler.data);
-                Debug.Log($"FBX saved at: {fbxPath}");
+                Debug.Log("Image uploaded! Downloading ZIP...");
 
-                // 추가적으로 FBX 파일 로딩 및 활용하는 코드를 여기에 작성
+                string zipPath = Path.Combine(Application.persistentDataPath, "downloadedAssets.zip");
+                File.WriteAllBytes(zipPath, www.downloadHandler.data);
+                Debug.Log($"ZIP saved at: {zipPath}");
+
+                ExtractZip(zipPath, Application.persistentDataPath);
+
+                // 여기서 FBX 및 PNG 파일을 로드 및 활용
             }
+        }
+    }
+
+    private void ExtractZip(string archivePath, string destinationPath)
+    {
+        try
+        {
+            using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archivePath)))
+            {
+                ZipEntry entry;
+                while ((entry = zipStream.GetNextEntry()) != null)
+                {
+                    string directoryName = Path.GetDirectoryName(entry.Name);
+                    string fileName = Path.GetFileName(entry.Name);
+
+                    if (directoryName.Length > 0)
+                        Directory.CreateDirectory(Path.Combine(destinationPath, directoryName));
+
+                    if (fileName != string.Empty)
+                    {
+                        using (FileStream streamWriter = File.Create(Path.Combine(destinationPath, entry.Name)))
+                        {
+                            int size = 2048;
+                            byte[] data = new byte[2048];
+                            while (true)
+                            {
+                                size = zipStream.Read(data, 0, data.Length);
+                                if (size > 0)
+                                    streamWriter.Write(data, 0, size);
+                                else
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Debug.Log("ZIP file extracted!");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError("Error extracting zip file: " + ex.Message);
         }
     }
 }

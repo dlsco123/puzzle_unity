@@ -1,4 +1,3 @@
-
 import bpy
 import sys
 import os
@@ -61,7 +60,7 @@ def create_puzzle_plane(image_path, piece_coords, plane_name, rows, cols):
     output_texture_path = os.path.join(result_dir, f"{plane_name}.png")
     tex_image.image.save_render(output_texture_path)
 
-    return plane
+    return plane, output_texture_path  # 플레인과 텍스처 이미지 경로를 반환
 
 
 def split_and_map_image(image_path, rows, cols):
@@ -71,6 +70,8 @@ def split_and_map_image(image_path, rows, cols):
     piece_width = width / cols
     piece_height = height / rows
     
+    texture_paths = []
+
     for i in range(rows):
         for j in range(cols):
             piece_name = f"Piece_{i}_{j}"
@@ -80,16 +81,22 @@ def split_and_map_image(image_path, rows, cols):
                 (j + 1) * piece_width,
                 height - i * piece_height
             )
-            plane = create_puzzle_plane(image_path, piece_coords, piece_name, rows, cols)
-            plane.location.x = j - cols/2 + 0.5  # cols/2를 빼서 중앙을 기준으로 위치를 조정
-            plane.location.y = i - rows/2 + 0.5  # rows/2를 빼서 중앙을 기준으로 위치를 조정
+            plane, texture_path = create_puzzle_plane(image_path, piece_coords, piece_name, rows, cols)
+            plane.location.x = j - cols/2 + 0.5
+            plane.location.y = i - rows/2 + 0.5
             plane.rotation_euler.z = 0
+            texture_paths.append(texture_path)
+
+    return texture_paths
+            
 
 # 인자 처리하기
 argv = sys.argv
 argv = argv[argv.index("--") + 1:]  # Blender 인자와 사용자 인자 분리
 input_image_path = argv[0]
-output_fbx_name = os.path.basename(argv[1])  # FBX 파일의 이름만 추출
+output_fbx_name = os.path.splitext(os.path.basename(argv[1]))[0] + ".fbx"
+
+# output_fbx_name = os.path.basename(argv[1])  # FBX 파일의 이름만 추출
 parent_dir = os.path.dirname(os.path.dirname(input_image_path))
 output_fbx_path = os.path.join(parent_dir, "result", output_fbx_name)  # 부모 디렉토리의 'result' 폴더로 경로 설정
 
@@ -98,7 +105,12 @@ bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete()
 
 # 이미지 분할 및 매핑
-split_and_map_image(input_image_path, 2, 2)
-
-# 결과를 부모 디렉토리의 'result' 폴더에 FBX 파일로 저장
+texture_paths = split_and_map_image(input_image_path, 4, 4)
+# FBX 저장하기
 bpy.ops.export_scene.fbx(filepath=output_fbx_path)
+
+
+# 결과를 출력
+print("FBX:", output_fbx_path)
+for path in texture_paths:
+    print("PNG:", path)
