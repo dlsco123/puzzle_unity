@@ -7,7 +7,7 @@ import zipfile
 
 router = APIRouter()
 
-@router.post("/upload-image/")
+@router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
     contents = await file.read()
 

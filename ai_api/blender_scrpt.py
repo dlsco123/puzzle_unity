@@ -44,8 +44,12 @@ def create_puzzle_plane(image_path, piece_coords, plane_name, rows, cols):
     tex_mapping.inputs['Location'].default_value[1] = -piece_coords[1] * rows  # y offset
     
     # Scale (확대/축소) 값 설정
-    tex_mapping.inputs['Scale'].default_value[0] = cols  # x scale
-    tex_mapping.inputs['Scale'].default_value[1] = rows  # y scale
+    # tex_mapping.inputs['Scale'].default_value[0] = cols  # x scale
+    # tex_mapping.inputs['Scale'].default_value[1] = rows  # y scale
+    # Scale (확대/축소) 값 설정
+    tex_mapping.inputs['Scale'].default_value[0] = 1 / cols  # x scale for one piece
+    tex_mapping.inputs['Scale'].default_value[1] = 1 / rows  # y scale for one piece
+
     
     # 연결 설정
     mat.node_tree.links.new(tex_coord.outputs['UV'], tex_mapping.inputs['Vector'])
@@ -62,8 +66,10 @@ def create_puzzle_plane(image_path, piece_coords, plane_name, rows, cols):
 
     return plane, output_texture_path  # 플레인과 텍스처 이미지 경로를 반환
 
+piece_count = 0  # 퍼즐 조각에 대한 일련번호를 저장할 전역 변수
 
 def split_and_map_image(image_path, rows, cols):
+    global piece_count
     # 이미지의 크기 및 정보 로딩
     image = bpy.data.images.load(image_path)
     width, height = image.size
@@ -74,7 +80,7 @@ def split_and_map_image(image_path, rows, cols):
 
     for i in range(rows):
         for j in range(cols):
-            piece_name = f"Piece_{i}_{j}"
+            piece_name = f"Piece_{piece_count}" 
             piece_coords = (
                 j * piece_width, 
                 height - (i + 1) * piece_height,
@@ -86,6 +92,7 @@ def split_and_map_image(image_path, rows, cols):
             plane.location.y = i - rows/2 + 0.5
             plane.rotation_euler.z = 0
             texture_paths.append(texture_path)
+            piece_count += 1
 
     return texture_paths
             
