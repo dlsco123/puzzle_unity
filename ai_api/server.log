@@ -1,0 +1,42 @@
+2023-11-09 17:27:12,174 - root - ERROR - Unexpected error occurred
+Traceback (most recent call last):
+  File "D:\final_unity\ai_api\routers\main_routes.py", line 43, in upload_image
+    process = await asyncio.create_subprocess_exec(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\subprocess.py", line 221, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\base_events.py", line 1694, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\base_events.py", line 502, in _make_subprocess_transport
+    raise NotImplementedError
+NotImplementedError
+2023-11-09 17:27:16,714 - root - ERROR - Unexpected error occurred
+Traceback (most recent call last):
+  File "D:\final_unity\ai_api\routers\main_routes.py", line 43, in upload_image
+    process = await asyncio.create_subprocess_exec(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\subprocess.py", line 221, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\base_events.py", line 1694, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\base_events.py", line 502, in _make_subprocess_transport
+    raise NotImplementedError
+NotImplementedError
+2023-11-09 17:29:03,345 - root - ERROR - Unexpected error occurred
+Traceback (most recent call last):
+  File "D:\final_unity\ai_api\routers\main_routes.py", line 43, in upload_image
+    process = await asyncio.create_subprocess_exec(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\subprocess.py", line 221, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\base_events.py", line 1694, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\miniforge3\envs\fastapi\Lib\asyncio\base_events.py", line 502, in _make_subprocess_transport
+    raise NotImplementedError
+NotImplementedError

@@ -1,14 +1,32 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse
+import firebase_admin
+from firebase_admin import credentials, storage
 import subprocess
 import os
 import uuid
-from fastapi.responses import FileResponse
 import zipfile
+from dotenv import load_dotenv
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
+
+# 환경 변수로부터 Firebase 설정 읽기
+firebase_key_path = os.getenv('FIREBASE_KEY_PATH')
+firebase_storage_bucket_name = os.getenv('FIREBASE_STORAGE_BUCKET').replace('gs://', '')
+
+# Firebase Admin 초기화
+cred = credentials.Certificate(firebase_key_path)
+firebase_admin.initialize_app(cred, {'storageBucket': firebase_storage_bucket_name})
 
 router = APIRouter()
 
 @router.post("/upload-image")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile = File(...), size: int = 2):
+    print("Size received in FastAPI:", size)
+    if size not in [2, 3, 4]:
+        raise HTTPException(status_code=400, detail="Size must be 2, 3, or 4.")
+
     contents = await file.read()
 
     # 지정된 경로에 이미지 저장
@@ -19,18 +37,17 @@ async def upload_image(file: UploadFile = File(...)):
         f.write(contents)
     
     try:
-        # subprocess를 사용하여 Blender 스크립트 실행
         subprocess.run(
             [
-                "D:\\blender.exe", 
+                "D:/blender.exe", 
                 "--background", 
-                "--python", "D:\\final_unity\\ai_api\\blender_scrpt.py", 
-                "--", save_path, unique_filename 
+                "--python", "D:/final_unity/ai_api/blender_scrpt.py", 
+                "--", save_path, str(size), "result"
             ], 
             check=True
         )
-    except subprocess.CalledProcessError:
-        raise HTTPException(status_code=500, detail="Error while processing the image with Blender.")
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Blender error: {e.stderr.decode()}")
 
     # Blender 스크립트에서 생성된 파일들을 ZIP 파일로 압축
     result_dir = os.path.abspath("result")
@@ -54,5 +71,10 @@ async def upload_image(file: UploadFile = File(...)):
         if file_path != zip_path:  # ZIP 파일은 삭제하지 않도록 예외 처리
             os.remove(file_path)
 
-    # 생성된 ZIP 파일을 반환
-    return FileResponse(zip_path, media_type="application/octet-stream", filename="output_files.zip")
+    # Firebase Storage에 업로드
+    bucket = storage.bucket()
+    blob = bucket.blob(f"output_files/{uuid.uuid4().hex}.zip")
+    blob.upload_from_filename(zip_path)
+
+    # 업로드된 파일의 URL 반환
+    return {"url": blob.public_url}

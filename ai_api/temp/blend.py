@@ -56,61 +56,19 @@ def create_textured_planes(image_path, size, output_dir):
                 plane.data.materials.append(mat)
 
                 piece_count += 1
-                # Ensure all pieces are selected for export
+
+        # Ensure all pieces are selected for export
         bpy.ops.object.select_all(action='DESELECT')
         for obj in bpy.data.objects:
-            if obj.type == 'MESH' and 'piece' in obj.name:
+            if obj.type == 'MESH':
                 obj.select_set(True)
 
-
-# Function to create an empty object at the center of the puzzle and set it as the parent for all pieces
-def create_empty_and_set_parent():
-    # Create an empty object
-    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
-    empty_obj = bpy.context.active_object
-
-    # Set the empty object as the parent for all puzzle pieces
-    for obj in bpy.data.objects:
-        if obj.type == 'MESH' and 'piece' in obj.name:
-            obj.parent = empty_obj
-
-    # Center the empty object
-    center_puzzle_objects(empty_obj)
-
-# Function to center the given object in the scene
-def center_puzzle_objects(empty_obj):
-    total_x, total_y, total_z = 0, 0, 0
-    count = 0
-    for obj in bpy.data.objects:
-        if obj.type == 'MESH' and 'piece' in obj.name:
-            total_x += obj.location.x
-            total_y += obj.location.y
-            total_z += obj.location.z
-            count += 1
-
-    if count > 0:
-        center_x = total_x / count
-        center_y = total_y / count
-        center_z = total_z / count
-
-        # Adjust the empty object's location to be at the center
-        empty_obj.location.x = -center_x
-        empty_obj.location.y = -center_y
-        empty_obj.location.z = -center_z
 # Clear the current scene
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete()
+
 # Create the puzzle pieces and textured planes
 create_textured_planes(input_image_path, size, output_dir)
-
-# Create an empty object and set it as the parent for all pieces
-create_empty_and_set_parent()
-
-# Ensure all pieces are selected for export
-bpy.ops.object.select_all(action='DESELECT')
-for obj in bpy.data.objects:
-    if obj.type == 'MESH' and 'piece' in obj.name:
-        obj.select_set(True)
 
 # Save the scene as an FBX file
 output_fbx_path = output_dir / f"puzzle_{size}x{size}.fbx"
