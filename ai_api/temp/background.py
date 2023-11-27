@@ -1,95 +1,56 @@
-import bpy
+import cv2
+import numpy as np
 from pathlib import Path
-from PIL import Image
-import sys
 
-# Get the command-line arguments
-args = sys.argv[sys.argv.index("--") + 1:]
-input_image_path = args[0]
-size = int(args[1])  # Number of rows and columns
-output_dir = Path(args[2]).resolve()
+def process_image(input_image_path, output_image_path):
+    # 이미지 로드
+    image = cv2.imread(input_image_path)
 
-# Ensure the output directory exists
-output_dir.mkdir(parents=True, exist_ok=True)
+    # 노이즈 제거
+    blurred = cv2.GaussianBlur(image, (5, 5), 0)
 
-# Function to split the image and create textured planes
-def create_textured_planes(image_path, size, output_dir):
-    with Image.open(image_path) as img:
-        width, height = img.size
+    # 그레이스케일로 변환
+    gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
 
-        # Adjust the size of each piece based on the puzzle size
-        if size == 2:
-            piece_width = width // 2
-            piece_height = height // 2
-        elif size == 3:
-            piece_width = width // 3
-            piece_height = height // 3
-        elif size == 4:
-            piece_width = width // 4
-            piece_height = height // 4
-        else:
-            print("Unsupported puzzle size.")
-            return
+    # 대비 향상
+    equalized = cv2.equalizeHist(gray)
 
-        piece_count = 0
-        for i in range(size):
-            for j in range(size):
-                piece_name = f"piece_{piece_count}"
-                # Calculate the piece's coordinates (left, upper, right, lower)
-                piece_coords = (
-                    j * piece_width,
-                    i * piece_height,
-                    (j + 1) * piece_width,
-                    (i + 1) * piece_height
-                )
+    # 이진화
+    _, binary = cv2.threshold(equalized, 127, 255, cv2.THRESH_BINARY_INV)
 
-                # Crop the image and save the texture
-                cropped = img.crop((
-                    piece_coords[0], 
-                    height - piece_coords[3], 
-                    piece_coords[2], 
-                    height - piece_coords[1]
-                ))
-                texture_path = output_dir / f"{piece_name}.png"
-                cropped.save(texture_path)
+    # 선 연결을 위한 팽창(dilation)
+    kernel = np.ones((3,3), np.uint8)
+    dilated = cv2.dilate(binary, kernel, iterations=1)
 
-                # Create plane and texture
-                bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, align='WORLD', location=(0, 0, 0))
-                plane = bpy.context.active_object
-                plane.name = piece_name
+    # 선 강화를 위해 캐니 에지 디텍터 사용
+    edges = cv2.Canny(dilated, threshold1=30, threshold2=100)
 
-                # Create material with texture
-                mat = bpy.data.materials.new(name=f"Mat_{piece_name}")
-                mat.use_nodes = True
-                bsdf = mat.node_tree.nodes["Principled BSDF"]
-                tex_image = mat.node_tree.nodes.new('ShaderNodeTexImage')
-                tex_image.image = bpy.data.images.load(str(texture_path))
-                mat.node_tree.links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
-                plane.data.materials.append(mat)
+    # 컨투어 확장
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    mask = np.zeros_like(edges)
+    cv2.drawContours(mask, contours, -1, color=255, thickness=cv2.FILLED)
 
-                # Set plane location relative to the size of the grid
-                plane.location.x = (j - size / 2 + 0.5) * piece_width
-                plane.location.y = (i - size / 2 + 0.5) * piece_height
-                plane.location.z = 0
+    # 결과 이미지를 확인하기 위한 부분
+    result = cv2.bitwise_and(image, image, mask=mask)
+    cv2.imshow('Result', result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-                piece_count += 1
+    # 마스크 반전
+    inverted_mask = cv2.bitwise_not(mask)
 
-        # Ensure all pieces are selected for export
-        bpy.ops.object.select_all(action='DESELECT')
-        for obj in bpy.data.objects:
-            if obj.type == 'MESH':
-                obj.select_set(True)
+    # 이미지와 반전된 마스크 결합
+    bg_removed = cv2.bitwise_and(image, image, mask=inverted_mask)
 
-# Clear the current scene
-bpy.ops.object.select_all(action='SELECT')
-bpy.ops.object.delete()
+    # 알파 채널(투명도) 추가
+    b, g, r = cv2.split(bg_removed)
+    alpha_channel = np.ones(b.shape, dtype=b.dtype) * 255 # 투명도 채널 생성, 모든 픽셀을 완전 불투명으로 설정
+    bg_removed = cv2.merge((b, g, r, alpha_channel))
 
-# Create the puzzle pieces and textured planes
-create_textured_planes(input_image_path, size, output_dir)
+    # 이미지 저장
+    cv2.imwrite(output_image_path, bg_removed)
 
-# Save the scene as an FBX file
-output_fbx_path = output_dir / f"puzzle_{size}x{size}.fbx"
-bpy.ops.export_scene.fbx(filepath=str(output_fbx_path), use_selection=True)
-
-print(f"FBX saved at: {output_fbx_path}")
-print(f"Textures saved at: {output_dir}")
+# 이미지 처리 실행
+input_path = 'input.png'
+output_path = 'background_removed.png'
+process_image(input_path, output_path)
